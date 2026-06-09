@@ -13,12 +13,14 @@ func main() {
 	database := db.Connect()
 
 	clientRepo := repository.NewClientRepo(database)
+	accountRepo := repository.NewAccountRepo(database)
 
 	clientSvc := service.NewClientService(clientRepo)
+	accountSvc := service.NewAccountService(accountRepo)
 
 	clientH := handler.NewClientHandler(clientSvc)
+	accountH := handler.NewAccountHandler(accountSvc)
 
-	// Static files
 	http.Handle("/", http.FileServer(http.Dir("static")))
 
 	http.HandleFunc("/clients", func(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +38,35 @@ func main() {
 		}
 	})
 	http.HandleFunc("/clients/search", clientH.Search)
+
+	http.HandleFunc("/accounts", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			accountH.List(w, r)
+		case http.MethodPost:
+			accountH.Open(w, r)
+		case http.MethodDelete:
+			accountH.Delete(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	http.HandleFunc("/accounts/search", accountH.Search)
+	http.HandleFunc("/accounts/close", accountH.Close)
+	http.HandleFunc("/accounts/delete-all", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		accountH.DeleteAllClosed(w, r)
+	})
+	http.HandleFunc("/clients/delete-all", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		clientH.DeleteAllClosed(w, r)
+	})
 
 	log.Println("Server started on :8080")
 	log.Fatal(http.ListenAndServe(":8080", corsMiddleware(http.DefaultServeMux)))

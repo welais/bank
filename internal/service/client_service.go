@@ -33,6 +33,10 @@ func (s *ClientService) Update(c *models.Client) error {
 	return s.repo.Update(c)
 }
 
+func (s *ClientService) DeleteAllClosed() (int64, error) {
+	return s.repo.DeleteAllClosed()
+}
+
 func (s *ClientService) Delete(id string) error {
 	return s.repo.Delete(id)
 }

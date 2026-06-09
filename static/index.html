@@ -1,310 +1,341 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Банковская система</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
+  <meta charset="UTF-8">
+  <title>Банковская система</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
 
+    header { background: #2c3e50; color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 32px; height: 48px; }
+    header h1 { font-size: 16px; font-weight: bold; margin-right: 16px; }
+    header button { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; padding: 4px 8px; border-bottom: 2px solid transparent; }
+    header button.active { color: #fff; border-bottom-color: #3498db; }
+    header button:hover { color: #fff; }
 
-header {
-  background: #2c3e50; color: #fff;
-  padding: 0 24px; display: flex; align-items: center; gap: 0; height: 50px;
-}
-header h1 { font-size: 15px; font-weight: bold; margin-right: 24px; white-space: nowrap; }
-.nav-btn {
-  background: none; border: none; border-bottom: 3px solid transparent;
-  color: #aab; cursor: pointer; font-size: 14px; padding: 0 18px; height: 50px;
-  transition: color .15s;
-}
-.nav-btn.active { color: #fff; border-bottom-color: #3498db; }
-.nav-btn:hover  { color: #fff; }
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
 
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .toolbar input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .toolbar button, button.btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; background: #3498db; color: #fff; }
+    .toolbar button:hover, button.btn:hover { background: #2980b9; }
+    button.btn-danger { background: #e74c3c; }
+    button.btn-danger:hover { background: #c0392b; }
+    button.btn-success { background: #27ae60; }
+    button.btn-success:hover { background: #219a52; }
+    button.btn-secondary { background: #7f8c8d; }
+    button.btn-secondary:hover { background: #636e72; }
 
-.page { display: none; padding: 20px 24px; }
-.page.active { display: block; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    th { background: #ecf0f1; text-align: left; padding: 10px 12px; font-weight: bold; border-bottom: 2px solid #ddd; }
+    td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
+    td input { width: 100%; padding: 4px 6px; border: 1px solid #bbb; border-radius: 3px; font-size: 13px; }
 
-.toolbar {
-  display: flex; gap: 8px; margin-bottom: 14px;
-  align-items: center; flex-wrap: wrap;
-}
-.toolbar input[type="text"],
-.toolbar input[type="date"],
-.toolbar select {
-  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
-  font-size: 13px; background: #fff;
-}
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 360px; max-width: 480px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,.2); }
+    .modal h2 { font-size: 15px; margin-bottom: 16px; }
+    .modal label { display: block; margin-bottom: 4px; font-size: 13px; color: #555; }
+    .modal input, .modal select { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; margin-bottom: 12px; }
+    .modal .required { color: #e74c3c; font-size: 11px; font-weight: bold; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 
-.btn {
-  padding: 6px 14px; border: none; border-radius: 4px;
-  cursor: pointer; font-size: 13px; background: #3498db; color: #fff;
-  white-space: nowrap;
-}
-.btn:hover        { background: #2980b9; }
-.btn-success      { background: #27ae60; }
-.btn-success:hover{ background: #1e8449; }
-.btn-danger       { background: #e74c3c; }
-.btn-danger:hover { background: #c0392b; }
-.btn-secondary    { background: #7f8c8d; }
-.btn-secondary:hover { background: #636e72; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-
-.table-wrap { overflow-x: auto; }
-table {
-  width: 100%; border-collapse: collapse; background: #fff;
-  border-radius: 6px; overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,.1);
-}
-th {
-  background: #ecf0f1; text-align: left;
-  padding: 10px 12px; font-weight: bold;
-  border-bottom: 2px solid #ddd; white-space: nowrap;
-}
-td {
-  padding: 8px 12px; border-bottom: 1px solid #eee;
-  vertical-align: middle;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #f9f9f9; }
-tr.row-kassa td { background: #fafafa; font-weight: bold; }
-tr.row-kassa:hover td { background: #f0f0f0; }
-
-td input.cell-input {
-  width: 100%; padding: 3px 6px; border: 1px solid #bbb;
-  border-radius: 3px; font-size: 13px; background: #fff;
-}
-td input.cell-input:disabled {
-  border-color: transparent; background: transparent; cursor: default;
-}
-
-
-.modal h2 { font-size: 15px; margin-bottom: 18px; color: #2c3e50; }
-.modal label { display: block; margin-bottom: 4px; font-size: 13px; color: #555; }
-.modal input, .modal select, .modal textarea {
-  width: 100%; padding: 7px 10px; border: 1px solid #ccc;
-  border-radius: 4px; font-size: 13px; margin-bottom: 12px;
-}
-.modal textarea { resize: vertical; min-height: 60px; }
-.error-msg { color: #e74c3c; font-size: 12px; margin-bottom: 8px; min-height: 16px; }
-
-
-.report-header h2 { font-size: 15px; }
-
-
-
-</style>
+    .error-msg { color: #e74c3c; font-size: 12px; margin-top: 6px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .badge-open { background: #d5f5e3; color: #1e8449; }
+    .badge-close { background: #fadbd8; color: #922b21; }
+  </style>
 </head>
 <body>
 
 <header>
   <h1>Банковская система</h1>
-  <button class="nav-btn active" onclick="showPage('clients',this)">Клиенты</button>
+  <button class="active" onclick="showPage('clients', this)">Клиенты</button>
+  <button onclick="showPage('accounts', this)">Счета</button>
 </header>
 
+<!-- КЛИЕНТЫ -->
 <div id="page-clients" class="page active">
   <div class="toolbar">
-    <input type="text" id="client-search" placeholder="Поиск по фамилии или телефону" style="width:280px">
-    <button class="btn" onclick="searchClients()">Найти</button>
-    <button class="btn btn-secondary" onclick="resetClients()">Сбросить</button>
-    <button class="btn btn-success" onclick="addClientRow()">+ Добавить клиента</button>
+    <input id="client-search" placeholder="Поиск по фамилии или телефону" style="width:280px">
+    <button onclick="searchClients()">Найти</button>
+    <button onclick="resetClients()">Сбросить</button>
+    <button class="btn-success btn" onclick="addClientRow()">+ Добавить клиента</button>
+    <button class="btn-danger btn" onclick="deleteAllClients()">Удалить всех закрытых</button>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th>Фамилия</th>
-        <th>Имя</th>
-        <th>Отчество</th>
-        <th>Телефон</th>
-        <th style="width:130px">Действия</th>
-      </tr></thead>
-      <tbody id="clients-body"></tbody>
-    </table>
+  <table>
+    <thead><tr>
+      <th>Фамилия</th><th>Имя</th><th>Отчество</th><th>Телефон</th><th>Действия</th>
+    </tr></thead>
+    <tbody id="clients-body"></tbody>
+  </table>
+</div>
+
+<!-- СЧЕТА -->
+<div id="page-accounts" class="page">
+  <div class="toolbar">
+    <input id="account-search" placeholder="Поиск по фамилии или номеру счёта" style="width:280px">
+    <button onclick="searchAccounts()">Найти</button>
+    <button onclick="loadAccounts()">Сбросить</button>
+    <button class="btn-success btn" onclick="openModal_openAccount()">+ Открыть счёт</button>
+    <button class="btn-danger btn" onclick="deleteAllAccounts()">Удалить все закрытые счета</button>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Номер счёта</th><th>Клиент</th><th>Тип</th><th>Статус</th><th>Баланс</th><th>Открыт</th><th>Закрыт</th><th>Действия</th>
+    </tr></thead>
+    <tbody id="accounts-body"></tbody>
+  </table>
+</div>
+
+<!-- МОДАЛ: ОТКРЫТЬ СЧЁТ -->
+<div id="modal-open-account" class="modal-bg">
+  <div class="modal">
+    <h2>Открыть счёт</h2>
+    <label>Клиент <span class="required">*обязательно</span></label>
+    <select id="oa-client"></select>
+    <label>Тип счёта</label>
+    <select id="oa-type">
+      <option value="А">А — Активный</option>
+      <option value="П">П — Пассивный</option>
+    </select>
+    <div id="oa-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-open-account')">Отмена</button>
+      <button class="btn btn-success" onclick="submitOpenAccount()">Открыть</button>
+    </div>
   </div>
 </div>
 
-
-
-
-
 <script>
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('header button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'clients') loadClients();
+    if (name === 'accounts') loadAccounts();
+  }
 
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+  function fmt(val) { return val ?? '—'; }
+  function fmtDate(s) { return s ? s.slice(0,10) : '—'; }
+  function fmtMoney(n) { return Number(n).toLocaleString('ru-RU', {minimumFractionDigits:2}); }
 
-
-function showPage(name, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (name === 'clients')    loadClients();
-
-}
-
-
-async function loadClients() {
-  const tbody = document.getElementById('clients-body');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">Загрузка...</td></tr>';
-  try {
+  // ─── КЛИЕНТЫ ─────────────────────────────────────────────────
+  async function loadClients() {
     const res = await fetch('/clients');
-    if (!res.ok) throw new Error(`Сервер вернул ${res.status}`);
-    const data = await res.json();
-    renderClients(data || []);
-  } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#e74c3c;padding:20px">Ошибка загрузки: ${e.message}</td></tr>`;
+    renderClients(await res.json());
   }
-}
 
-async function searchClients() {
-  const q = document.getElementById('client-search').value.trim();
-  if (!q) { loadClients(); return; }
-  const param = /^\+?[\d\s\-()]+$/.test(q) ? 'phone' : 'last_name';
-  const res  = await fetch(`/clients/search?${param}=${encodeURIComponent(q)}`);
-  const data = await res.json();
-  renderClients(Array.isArray(data) ? data : (data ? [data] : []));
-}
+  async function searchClients() {
+    const q = document.getElementById('client-search').value.trim();
+    if (!q) { loadClients(); return; }
+    const param = /^\d/.test(q) ? 'phone' : 'last_name';
+    const res = await fetch(`/clients/search?${param}=${encodeURIComponent(q)}`);
+    renderClients(await res.json());
+  }
 
-function resetClients() {
-  document.getElementById('client-search').value = '';
-  loadClients();
-}
+  function resetClients() {
+    document.getElementById('client-search').value = '';
+    loadClients();
+  }
 
-const KASSA_CLIENT_ID = '00000000-0000-0000-0000-000000000001';
+  const KASSA_CLIENT_ID = '00000000-0000-0000-0000-000000000001';
 
-
-
-function renderClients(list) {
-  const tbody = document.getElementById('clients-body');
-  tbody.innerHTML = '';
-  list.forEach(c => {
-    const isKassa = c.id === KASSA_CLIENT_ID;
-    const tr = document.createElement('tr');
-    tr.dataset.id = c.id;
-    if (isKassa) tr.classList.add('row-kassa');
-    tr.innerHTML = `
-      <td><input class="cell-input" value="${esc(c.last_name)}"        data-field="last_name"   ${isKassa ? 'disabled' : 'disabled'}></td>
-      <td><input class="cell-input" value="${esc(c.first_name)}"       data-field="first_name"  ${isKassa ? 'disabled' : 'disabled'}></td>
-      <td><input class="cell-input" value="${esc(c.middle_name ?? '')}" data-field="middle_name" ${isKassa ? 'disabled' : 'disabled'}></td>
-      <td><input class="cell-input" value="${esc(c.phone)}"            data-field="phone"       ${isKassa ? 'disabled' : 'disabled'}></td>
+  function renderClients(list) {
+    const tbody = document.getElementById('clients-body');
+    tbody.innerHTML = '';
+    (list || []).forEach(c => {
+      const isKassa = c.id === KASSA_CLIENT_ID;
+      const tr = document.createElement('tr');
+      tr.dataset.id = c.id;
+      tr.innerHTML = `
+      <td><input value="${fmt(c.last_name)}"   data-field="last_name"   disabled></td>
+      <td><input value="${fmt(c.first_name)}"  data-field="first_name"  disabled></td>
+      <td><input value="${fmt(c.middle_name)}" data-field="middle_name" disabled></td>
+      <td><input value="${fmt(c.phone)}"       data-field="phone"       disabled></td>
       <td style="white-space:nowrap">${isKassa ? '' : `
-        <button class="btn btn-secondary btn-sm edit-btn" onclick="toggleEdit(this)">Изменить</button>
-        <button class="btn btn-danger btn-sm del-btn" style="margin-left:4px" onclick="deleteClient('${esc(c.id)}', this)">Удалить</button>
-        <div class="inline-err error-msg" style="margin-top:4px"></div>`}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function addClientRow() {
-  const tbody = document.getElementById('clients-body');
-  const tr = document.createElement('tr');
-  tr.dataset.id = '';
-  tr.innerHTML = `
-    <td><input class="cell-input" placeholder="Фамилия *" data-field="last_name"></td>
-    <td><input class="cell-input" placeholder="Имя *"     data-field="first_name"></td>
-    <td><input class="cell-input" placeholder="Отчество"  data-field="middle_name"></td>
-    <td><input class="cell-input" placeholder="Телефон *" data-field="phone"></td>
-    <td style="white-space:nowrap">
-      <button class="btn btn-success btn-sm" onclick="saveClient(this)">Сохранить</button>
-      <button class="btn btn-secondary btn-sm" onclick="this.closest('tr').remove()">Отмена</button>
-      <div class="inline-err error-msg" style="margin-top:4px"></div>
-    </td>`;
-  const first = tbody.firstChild;
-  if (first) tbody.insertBefore(tr, first.nextSibling);
-  else tbody.appendChild(tr);
-  tr.querySelector('input').focus();
-}
-
-function toggleEdit(btn) {
-  const tr     = btn.closest('tr');
-  const inputs = tr.querySelectorAll('input.cell-input');
-  if (btn.textContent.trim() === 'Изменить') {
-    inputs.forEach(i => { i.disabled = false; });
-    btn.textContent = 'Сохранить';
-    btn.className   = 'btn btn-success btn-sm edit-btn';
-    const delBtn = tr.querySelector('.del-btn');
-    if (delBtn) delBtn.style.display = 'none';
-    if (!tr.querySelector('.cancel-edit-btn')) {
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'btn btn-secondary btn-sm cancel-edit-btn';
-      cancelBtn.style.marginLeft = '4px';
-      cancelBtn.textContent = 'Отмена';
-      cancelBtn.onclick = () => loadClients();
-      btn.parentNode.insertBefore(cancelBtn, btn.nextSibling);
-    }
-  } else {
-    saveClient(btn);
-  }
-}
-
-async function saveClient(btn) {
-  const tr   = btn.closest('tr');
-  const id   = tr.dataset.id;
-  const body = {};
-  tr.querySelectorAll('input[data-field]').forEach(i => { body[i.dataset.field] = i.value.trim(); });
-
-  const errEl = tr.querySelector('.inline-err') || (() => {
-    const d = document.createElement('div');
-    d.className = 'inline-err error-msg';
-    d.style.marginTop = '4px';
-    tr.querySelector('td:last-child').appendChild(d);
-    return d;
-  })();
-  errEl.textContent = '';
-
-  if (!body.last_name)  { errEl.textContent = 'Фамилия обязательна'; return; }
-  if (!body.first_name) { errEl.textContent = 'Имя обязательно';     return; }
-  if (!body.phone)      { errEl.textContent = 'Телефон обязателен';   return; }
-
-  let r;
-  if (id) {
-    body.id = id;
-    r = await fetch('/clients', {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
+        <button class="btn btn-secondary" onclick="toggleEdit(this)">Изменить</button>
+        <button class="btn btn-danger" style="margin-left:4px" onclick="deleteClient('${c.id}', this)">Удалить</button>
+        <div class="inline-err" style="color:#e74c3c;font-size:12px;margin-top:4px"></div>`}
+      </td>`;
+      tbody.appendChild(tr);
     });
-  } else {
-    r = await fetch('/clients', {
+  }
+
+  function addClientRow() {
+    const tbody = document.getElementById('clients-body');
+    const tr = document.createElement('tr');
+    tr.dataset.id = '';
+    tr.innerHTML = `
+    <td><input placeholder="Фамилия *" data-field="last_name"></td>
+    <td><input placeholder="Имя *"     data-field="first_name"></td>
+    <td><input placeholder="Отчество"  data-field="middle_name"></td>
+    <td><input placeholder="Телефон *" data-field="phone"></td>
+    <td><button class="btn btn-success" onclick="saveClient(this)">Сохранить</button></td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+    tr.querySelector('input').focus();
+  }
+
+  function toggleEdit(btn) {
+    const tr = btn.closest('tr');
+    if (btn.textContent === 'Сохранить') {
+      saveClient(btn);
+    } else {
+      tr.querySelectorAll('input').forEach(i => i.disabled = false);
+      btn.textContent = 'Сохранить';
+      btn.className = 'btn btn-success';
+    }
+  }
+
+  async function saveClient(btn) {
+    const tr = btn.closest('tr');
+    const id = tr.dataset.id;
+    const body = {};
+    tr.querySelectorAll('input[data-field]').forEach(i => body[i.dataset.field] = i.value.trim());
+    if (!body.last_name || !body.first_name || !body.phone) {
+      alert('Фамилия, Имя и Телефон обязательны');
+      return;
+    }
+    if (id) {
+      body.id = id;
+      await fetch('/clients', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    } else {
+      await fetch('/clients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    }
+    loadClients();
+  }
+
+  // ─── СЧЕТА ───────────────────────────────────────────────────
+  async function loadAccounts() {
+    const res = await fetch('/accounts');
+    renderAccounts(await res.json());
+  }
+
+  async function searchAccounts() {
+    const q = document.getElementById('account-search').value.trim();
+    if (!q) { loadAccounts(); return; }
+    const param = /^\d{10,}/.test(q) ? 'number' : 'last_name';
+    const res = await fetch(`/accounts/search?${param}=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    renderAccounts(Array.isArray(data) ? data : [data]);
+  }
+
+  const KASSA_ACCOUNT_ID = '00000000-0000-0000-0000-000000000002';
+
+  function renderAccounts(list) {
+    const tbody = document.getElementById('accounts-body');
+    tbody.innerHTML = '';
+    (list || []).forEach(a => {
+      const isOpen  = a.status === 'OPEN';
+      const isKassa = a.id === KASSA_ACCOUNT_ID;
+      const badge = isOpen
+              ? '<span class="badge badge-open">Открыт</span>'
+              : '<span class="badge badge-close">Закрыт</span>';
+      const closeBtn = isOpen && !isKassa
+              ? `<button class="btn btn-danger" onclick="closeAccount('${a.id}')">Закрыть</button>`
+              : '';
+      const delBtn = !isOpen && !isKassa
+              ? `<button class="btn btn-danger" style="margin-left:4px" onclick="deleteAccount('${a.id}', this)">Удалить</button>`
+              : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td>${fmt(a.account_number)}</td>
+      <td>${fmt(a.client_name)}</td>
+      <td>${a.account_type === 'А' ? 'А — Активный' : 'П — Пассивный'}</td>
+      <td>${badge}</td>
+      <td>${fmtMoney(a.balance)}</td>
+      <td>${fmtDate(a.opened_at)}</td>
+      <td>${fmtDate(a.closed_at)}</td>
+      <td style="white-space:nowrap">${closeBtn}${delBtn}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function deleteClient(id, btn) {
+    const tr   = btn.closest('tr');
+    const name = tr.querySelector('input[data-field="last_name"]')?.value || 'клиента';
+    if (!confirm(`Удалить ${name}?`)) return;
+    const r = await fetch(`/clients?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const errEl = tr.querySelector('.inline-err');
+      if (errEl) errEl.textContent = (await r.text()).trim() || 'Ошибка удаления';
+      return;
+    }
+    loadClients();
+  }
+
+  async function deleteAccount(id, btn) {
+    if (!confirm('Удалить счёт?')) return;
+    const r = await fetch(`/accounts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!r.ok) {
+      alert((await r.text()).trim() || 'Ошибка удаления');
+      return;
+    }
+    loadAccounts();
+  }
+
+  async function closeAccount(id) {
+    if (!confirm('Закрыть счёт?')) return;
+    await fetch(`/accounts/close?id=${id}`, { method: 'POST' });
+    loadAccounts();
+  }
+
+  async function openModal_openAccount() {
+    const res = await fetch('/clients');
+    const data = await res.json();
+    const sel = document.getElementById('oa-client');
+    sel.innerHTML = '';
+    (data || []).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.last_name} ${c.first_name} ${c.middle_name || ''}`.trim();
+      sel.appendChild(opt);
+    });
+    openModal('modal-open-account');
+  }
+
+  async function submitOpenAccount() {
+    const clientID = document.getElementById('oa-client').value;
+    const accountType = document.getElementById('oa-type').value;
+    document.getElementById('oa-error').textContent = '';
+    if (!clientID) { document.getElementById('oa-error').textContent = 'Выберите клиента'; return; }
+    const res = await fetch('/accounts', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
+      body: JSON.stringify({ client_id: clientID, account_type: accountType })
     });
-  }
-
-  if (!r.ok) {
-    const text = await r.text();
-    errEl.textContent = text || 'Ошибка сохранения';
-    return;
-  }
-  loadClients();
-}
-
-// Load clients automatically when the page opens
-document.addEventListener('DOMContentLoaded', () => loadClients());
-
-async function deleteClient(id, btn) {
-  const tr   = btn.closest('tr');
-  const name = tr.querySelector('input[data-field="last_name"]')?.value || 'клиента';
-  if (!confirm(`Удалить ${name}?`)) return;
-
-  const r = await fetch(`/clients?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (!r.ok) {
-    const text = await r.text();
-    let errEl = tr.querySelector('.inline-err');
-    if (!errEl) {
-      errEl = document.createElement('div');
-      errEl.className = 'inline-err error-msg';
-      errEl.style.marginTop = '4px';
-      tr.querySelector('td:last-child').appendChild(errEl);
+    if (!res.ok) {
+      document.getElementById('oa-error').textContent = await res.text();
+      return;
     }
-    errEl.textContent = text.trim() || 'Ошибка удаления';
-    return;
+    closeModal('modal-open-account');
+    loadAccounts();
   }
+
+  async function deleteAllClients() {
+    if (!confirm('Удалить всех клиентов, у которых все счета закрыты?')) return;
+    const res = await fetch('/clients/delete-all', { method: 'DELETE' });
+    const data = await res.json();
+    alert(`Удалено клиентов: ${data.deleted}`);
+    loadClients();
+  }
+
+  async function deleteAllAccounts() {
+    if (!confirm('Удалить все закрытые счета (кроме Касса)?')) return;
+    const res = await fetch('/accounts/delete-all', { method: 'DELETE' });
+    const data = await res.json();
+    alert(`Удалено счетов: ${data.deleted}`);
+    loadAccounts();
+  }
+
   loadClients();
-}
 </script>
 </body>
 </html>

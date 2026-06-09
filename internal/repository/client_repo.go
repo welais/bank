@@ -14,11 +14,10 @@ type ClientRepo struct {
 func NewClientRepo(db *sqlx.DB) *ClientRepo {
 	return &ClientRepo{db: db}
 }
+
 func (r *ClientRepo) Create(c *models.Client) error {
 	return r.db.QueryRow(
-		`INSERT INTO clients (last_name, first_name, middle_name, phone)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id`,
+		`CALL add_client($1, $2, $3, $4, NULL)`,
 		c.LastName, c.FirstName, c.MiddleName, c.Phone,
 	).Scan(&c.ID)
 }
@@ -62,11 +61,13 @@ func (r *ClientRepo) FindByPhone(phone string) ([]models.Client, error) {
 }
 
 func (r *ClientRepo) Delete(id string) error {
+	if id == "00000000-0000-0000-0000-000000000001" {
+		return fmt.Errorf("нельзя удалить системного клиента Касса")
+	}
 	var count int
-	err := r.db.QueryRow(
+	if err := r.db.QueryRow(
 		`SELECT COUNT(*) FROM accounts WHERE client_id = $1 AND status = 'OPEN'`, id,
-	).Scan(&count)
-	if err != nil {
+	).Scan(&count); err != nil {
 		return err
 	}
 	if count > 0 {
@@ -81,4 +82,19 @@ func (r *ClientRepo) Delete(id string) error {
 		return fmt.Errorf("клиент не найден")
 	}
 	return nil
+}
+
+func (r *ClientRepo) DeleteAllClosed() (int64, error) {
+	res, err := r.db.Exec(`
+		DELETE FROM clients
+		WHERE id != '00000000-0000-0000-0000-000000000001'
+		  AND NOT EXISTS (
+		      SELECT 1 FROM accounts
+		      WHERE accounts.client_id = clients.id
+		        AND accounts.status = 'OPEN'
+		  )`)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }

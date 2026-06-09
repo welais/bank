@@ -63,19 +63,6 @@ func (h *ClientHandler) Search(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(clients)
 }
 
-func (h *ClientHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-	if err := h.svc.Delete(id); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
 func (h *ClientHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var c models.Client
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
@@ -91,4 +78,26 @@ func (h *ClientHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(c)
+}
+
+func (h *ClientHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.Delete(id); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ClientHandler) DeleteAllClosed(w http.ResponseWriter, r *http.Request) {
+	n, err := h.svc.DeleteAllClosed()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]int64{"deleted": n})
 }

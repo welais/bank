@@ -12,23 +12,15 @@ import (
 func Connect() *sqlx.DB {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		getenv("DB_HOST", "localhost"),
-		getenv("DB_PORT", "5432"),
-		getenv("DB_USER", "user"),
-		getenv("DB_PASSWORD", "example"),
-		getenv("DB_NAME", "Bank"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
 	)
-
-	database, err := sqlx.Connect("postgres", dsn)
+	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return database
-}
-
-func getenv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
+	return db
 }
