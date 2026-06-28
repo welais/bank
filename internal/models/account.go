@@ -14,6 +14,5 @@ type Account struct {
 	CreatedAt     time.Time  `db:"created_at"     json:"created_at"`
 	UpdatedAt     time.Time  `db:"updated_at"     json:"updated_at"`
 
-	// Joined field (not stored in accounts table)
 	ClientName string `db:"client_name" json:"client_name,omitempty"`
 }

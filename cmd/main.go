@@ -14,12 +14,18 @@ func main() {
 
 	clientRepo := repository.NewClientRepo(database)
 	accountRepo := repository.NewAccountRepo(database)
+	stmtRepo := repository.NewStatementRepo(database)
+	jeRepo := repository.NewJournalEntryRepo(database)
 
 	clientSvc := service.NewClientService(clientRepo)
-	accountSvc := service.NewAccountService(accountRepo)
+	accountSvc := service.NewAccountService(accountRepo, stmtRepo)
+	jeSvc := service.NewJournalEntryService(jeRepo)
+	stmtSvc := service.NewStatementService(stmtRepo)
 
 	clientH := handler.NewClientHandler(clientSvc)
 	accountH := handler.NewAccountHandler(accountSvc)
+	jeH := handler.NewJournalEntryHandler(jeSvc)
+	stmtH := handler.NewStatementHandler(stmtSvc)
 
 	http.Handle("/", http.FileServer(http.Dir("static")))
 
@@ -38,6 +44,13 @@ func main() {
 		}
 	})
 	http.HandleFunc("/clients/search", clientH.Search)
+	http.HandleFunc("/clients/delete-all", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		clientH.DeleteAllClosed(w, r)
+	})
 
 	http.HandleFunc("/accounts", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -53,6 +66,7 @@ func main() {
 	})
 	http.HandleFunc("/accounts/search", accountH.Search)
 	http.HandleFunc("/accounts/close", accountH.Close)
+	http.HandleFunc("/accounts/statement", accountH.Statement)
 	http.HandleFunc("/accounts/delete-all", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -60,12 +74,27 @@ func main() {
 		}
 		accountH.DeleteAllClosed(w, r)
 	})
-	http.HandleFunc("/clients/delete-all", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
+
+	http.HandleFunc("/journal-entries", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			jeH.List(w, r)
+		case http.MethodPost:
+			jeH.Create(w, r)
+		case http.MethodDelete:
+			jeH.Delete(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	http.HandleFunc("/journal-entries/search", jeH.Search)
+
+	http.HandleFunc("/statements", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		clientH.DeleteAllClosed(w, r)
+		stmtH.List(w, r)
 	})
 
 	log.Println("Server started on :8080")

@@ -37,7 +37,7 @@ func (h *AccountHandler) Open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.AccountType == "" {
-		req.AccountType = "А"
+		req.AccountType = "П"
 	}
 	acc, err := h.svc.Open(req.ClientID, req.AccountType)
 	if err != nil {
@@ -104,4 +104,24 @@ func (h *AccountHandler) DeleteAllClosed(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]int64{"deleted": n})
+}
+
+func (h *AccountHandler) Statement(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	accountID := q.Get("account_id")
+	if accountID == "" {
+		http.Error(w, "account_id is required", http.StatusBadRequest)
+		return
+	}
+	from, to, err := parseDateRange(q.Get("from"), q.Get("to"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	rows, err := h.svc.GetStatement(accountID, from, to)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(rows)
 }

@@ -3,14 +3,16 @@ package service
 import (
 	"bank/internal/models"
 	"bank/internal/repository"
+	"time"
 )
 
 type AccountService struct {
-	repo *repository.AccountRepo
+	repo     *repository.AccountRepo
+	stmtRepo *repository.StatementRepo
 }
 
-func NewAccountService(repo *repository.AccountRepo) *AccountService {
-	return &AccountService{repo: repo}
+func NewAccountService(repo *repository.AccountRepo, stmtRepo *repository.StatementRepo) *AccountService {
+	return &AccountService{repo: repo, stmtRepo: stmtRepo}
 }
 
 func (s *AccountService) Open(clientID string, accountType string) (*models.Account, error) {
@@ -33,10 +35,14 @@ func (s *AccountService) FindByClientLastName(lastName string) ([]models.Account
 	return s.repo.FindByClientLastName(lastName)
 }
 
+func (s *AccountService) Delete(id string) error {
+	return s.repo.Delete(id)
+}
+
 func (s *AccountService) DeleteAllClosed() (int64, error) {
 	return s.repo.DeleteAllClosed()
 }
 
-func (s *AccountService) Delete(id string) error {
-	return s.repo.Delete(id)
+func (s *AccountService) GetStatement(accountID string, from, to time.Time) ([]models.AccountStatement, error) {
+	return s.stmtRepo.GetByAccount(accountID, from, to)
 }

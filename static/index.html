@@ -55,9 +55,10 @@
   <h1>Банковская система</h1>
   <button class="active" onclick="showPage('clients', this)">Клиенты</button>
   <button onclick="showPage('accounts', this)">Счета</button>
+  <button onclick="showPage('journal', this)">Проводки</button>
+  <button onclick="showPage('statements', this)">Выписки</button>
 </header>
 
-<!-- КЛИЕНТЫ -->
 <div id="page-clients" class="page active">
   <div class="toolbar">
     <input id="client-search" placeholder="Поиск по фамилии или телефону" style="width:280px">
@@ -74,7 +75,6 @@
   </table>
 </div>
 
-<!-- СЧЕТА -->
 <div id="page-accounts" class="page">
   <div class="toolbar">
     <input id="account-search" placeholder="Поиск по фамилии или номеру счёта" style="width:280px">
@@ -91,7 +91,61 @@
   </table>
 </div>
 
-<!-- МОДАЛ: ОТКРЫТЬ СЧЁТ -->
+<div id="page-journal" class="page">
+  <div class="toolbar">
+    <input id="je-search-date" type="date" placeholder="Поиск по дате">
+    <button onclick="searchJournalEntries()">Найти</button>
+    <button onclick="loadJournalEntries()">Сбросить</button>
+    <button class="btn-success btn" onclick="openModal_createJE()">+ Создать проводку</button>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Номер</th><th>Дата</th><th>Дебет (счёт)</th><th>Кредит (счёт)</th><th>Сумма</th><th>Назначение</th><th>Действия</th>
+    </tr></thead>
+    <tbody id="journal-body"></tbody>
+  </table>
+</div>
+
+<div id="page-statements" class="page">
+  <div class="toolbar">
+    <select id="stmt-account" style="min-width:220px">
+      <option value="">— Все счета —</option>
+    </select>
+    <input id="stmt-from" type="date">
+    <input id="stmt-to"   type="date">
+    <button onclick="loadStatements()">Показать</button>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Дата</th><th>Счёт</th><th>Проводка</th><th>Сторона</th><th>Входящий</th><th>Сумма</th><th>Исходящий</th>
+    </tr></thead>
+    <tbody id="statements-body"></tbody>
+  </table>
+</div>
+
+<div id="modal-create-je" class="modal-bg">
+  <div class="modal">
+    <h2>Создать проводку</h2>
+    <label>Номер проводки <span class="required">*</span></label>
+    <input id="je-number" placeholder="001">
+    <label>Дата <span class="required">*</span></label>
+    <input id="je-date" type="date">
+    <label>Дебетовый счёт <span class="required">*</span></label>
+    <select id="je-debit"></select>
+    <label>Кредитовый счёт <span class="required">*</span></label>
+    <select id="je-credit"></select>
+    <label>Сумма <span class="required">*</span></label>
+    <input id="je-amount" type="number" min="0.01" step="0.01" placeholder="0.00">
+    <label>Назначение платежа</label>
+    <input id="je-purpose" placeholder="Назначение платежа">
+    <div id="je-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-create-je')">Отмена</button>
+      <button class="btn btn-success" onclick="submitCreateJE()">Создать</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-open-account" class="modal-bg">
   <div class="modal">
     <h2>Открыть счёт</h2>
@@ -99,8 +153,8 @@
     <select id="oa-client"></select>
     <label>Тип счёта</label>
     <select id="oa-type">
-      <option value="А">А — Активный</option>
       <option value="П">П — Пассивный</option>
+      <option value="А">А — Активный</option>
     </select>
     <div id="oa-error" class="error-msg"></div>
     <div class="modal-footer">
@@ -116,8 +170,10 @@
     document.querySelectorAll('header button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     btn.classList.add('active');
-    if (name === 'clients') loadClients();
-    if (name === 'accounts') loadAccounts();
+    if (name === 'clients')    loadClients();
+    if (name === 'accounts')   loadAccounts();
+    if (name === 'journal')    loadJournalEntries();
+    if (name === 'statements') initStatements();
   }
 
   function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -127,7 +183,6 @@
   function fmtDate(s) { return s ? s.slice(0,10) : '—'; }
   function fmtMoney(n) { return Number(n).toLocaleString('ru-RU', {minimumFractionDigits:2}); }
 
-  // ─── КЛИЕНТЫ ─────────────────────────────────────────────────
   async function loadClients() {
     const res = await fetch('/clients');
     renderClients(await res.json());
@@ -151,8 +206,8 @@
   function renderClients(list) {
     const tbody = document.getElementById('clients-body');
     tbody.innerHTML = '';
-    (list || []).forEach(c => {
-      const isKassa = c.id === KASSA_CLIENT_ID;
+    (list || []).filter(c => c.id !== KASSA_CLIENT_ID).forEach(c => {
+      const isKassa = false;
       const tr = document.createElement('tr');
       tr.dataset.id = c.id;
       tr.innerHTML = `
@@ -212,7 +267,6 @@
     loadClients();
   }
 
-  // ─── СЧЕТА ───────────────────────────────────────────────────
   async function loadAccounts() {
     const res = await fetch('/accounts');
     renderAccounts(await res.json());
@@ -232,7 +286,7 @@
   function renderAccounts(list) {
     const tbody = document.getElementById('accounts-body');
     tbody.innerHTML = '';
-    (list || []).forEach(a => {
+    (list || []).filter(a => a.id !== KASSA_ACCOUNT_ID).forEach(a => {
       const isOpen  = a.status === 'OPEN';
       const isKassa = a.id === KASSA_ACCOUNT_ID;
       const badge = isOpen
@@ -292,7 +346,7 @@
     const data = await res.json();
     const sel = document.getElementById('oa-client');
     sel.innerHTML = '';
-    (data || []).forEach(c => {
+    (data || []).filter(c => c.id !== KASSA_CLIENT_ID).forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
       opt.textContent = `${c.last_name} ${c.first_name} ${c.middle_name || ''}`.trim();
@@ -333,6 +387,137 @@
     const data = await res.json();
     alert(`Удалено счетов: ${data.deleted}`);
     loadAccounts();
+  }
+
+  async function loadJournalEntries() {
+    document.getElementById('je-search-date').value = '';
+    const res = await fetch('/journal-entries');
+    renderJournalEntries(await res.json());
+  }
+
+  async function searchJournalEntries() {
+    const date = document.getElementById('je-search-date').value;
+    if (!date) { loadJournalEntries(); return; }
+    const res = await fetch(`/journal-entries/search?date=${date}`);
+    renderJournalEntries(await res.json());
+  }
+
+  function renderJournalEntries(list) {
+    const tbody = document.getElementById('journal-body');
+    tbody.innerHTML = '';
+    (list || []).forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td>${fmt(e.entry_number)}</td>
+      <td>${fmtDate(e.entry_date)}</td>
+      <td>${fmt(e.debit_account_number)}</td>
+      <td>${fmt(e.credit_account_number)}</td>
+      <td>${fmtMoney(e.amount)}</td>
+      <td>${fmt(e.payment_purpose)}</td>
+      <td><button class="btn btn-danger" onclick="deleteJournalEntry('${e.id}')">Удалить</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function deleteJournalEntry(id) {
+    if (!confirm('Удалить проводку? Балансы счетов будут пересчитаны.')) return;
+    const r = await fetch(`/journal-entries?id=${id}`, { method: 'DELETE' });
+    if (!r.ok) { alert((await r.text()).trim() || 'Ошибка удаления'); return; }
+    loadJournalEntries();
+  }
+
+  async function openModal_createJE() {
+    const res = await fetch('/accounts');
+    const accounts = (await res.json()) || [];
+    const open = accounts.filter(a => a.status === 'OPEN');
+    ['je-debit','je-credit'].forEach(selId => {
+      const sel = document.getElementById(selId);
+      sel.innerHTML = '';
+      open.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = `${a.account_number} (${a.client_name || ''})`;
+        sel.appendChild(opt);
+      });
+    });
+    document.getElementById('je-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('modal-create-je').classList.add('open');
+  }
+
+  async function submitCreateJE() {
+    const errEl = document.getElementById('je-error');
+    errEl.textContent = '';
+    const body = {
+      entry_number:      document.getElementById('je-number').value.trim(),
+      entry_date:        document.getElementById('je-date').value + 'T00:00:00Z',
+      debit_account_id:  document.getElementById('je-debit').value,
+      credit_account_id: document.getElementById('je-credit').value,
+      amount:            parseFloat(document.getElementById('je-amount').value),
+      payment_purpose:   document.getElementById('je-purpose').value.trim(),
+    };
+    if (!body.entry_number || !body.debit_account_id || !body.credit_account_id || !(body.amount > 0)) {
+      errEl.textContent = 'Заполните обязательные поля'; return;
+    }
+    if (body.debit_account_id === body.credit_account_id) {
+      errEl.textContent = 'Дебетовый и кредитовый счёт не могут совпадать'; return;
+    }
+    const res = await fetch('/journal-entries', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    if (!res.ok) { errEl.textContent = (await res.text()).trim(); return; }
+    closeModal('modal-create-je');
+    document.getElementById('je-number').value = '';
+    document.getElementById('je-amount').value = '';
+    document.getElementById('je-purpose').value = '';
+    loadJournalEntries();
+  }
+
+  async function initStatements() {
+    const res = await fetch('/accounts');
+    const accounts = (await res.json()) || [];
+    const sel = document.getElementById('stmt-account');
+    sel.innerHTML = '<option value="">— Все счета —</option>';
+    accounts.filter(a => a.id !== KASSA_ACCOUNT_ID).forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = `${a.account_number} (${a.client_name || ''})`;
+      sel.appendChild(opt);
+    });
+    if (!document.getElementById('stmt-from').value) {
+      const y = new Date().getFullYear();
+      document.getElementById('stmt-from').value = `${y}-01-01`;
+      document.getElementById('stmt-to').value   = new Date().toISOString().slice(0,10);
+    }
+    loadStatements();
+  }
+
+  async function loadStatements() {
+    const accountID = document.getElementById('stmt-account').value;
+    const from = document.getElementById('stmt-from').value;
+    const to   = document.getElementById('stmt-to').value;
+    let url = '/statements?';
+    if (accountID) url += `account_id=${encodeURIComponent(accountID)}&`;
+    if (from) url += `from=${from}&`;
+    if (to)   url += `to=${to}`;
+    const res = await fetch(url);
+    renderStatements(await res.json());
+  }
+
+  function renderStatements(list) {
+    const tbody = document.getElementById('statements-body');
+    tbody.innerHTML = '';
+    (list || []).forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td>${fmtDate(s.statement_date)}</td>
+      <td>${fmt(s.account_number)}</td>
+      <td>${fmt(s.entry_number)}</td>
+      <td>${s.side === 'Debit' ? 'Дебет' : 'Кредит'}</td>
+      <td>${fmtMoney(s.incoming_balance)}</td>
+      <td>${fmtMoney(s.amount)}</td>
+      <td>${fmtMoney(s.outgoing_balance)}</td>`;
+      tbody.appendChild(tr);
+    });
   }
 
   loadClients();
